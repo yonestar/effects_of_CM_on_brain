@@ -1,15 +1,22 @@
 %% load data
+% data is in BIDS format (so can later share on openfmri)
+% right now, only have derivatives (the pre and post contrast images) in this format
+% later, put the full data in BIDS format for sharing on openfMRI
+ 
+% load group assignments and behavioral data from trial
+load CM_data_2015-07-29_16_16.mat  % canlab dataset object.  loads 'CM' var
 
+% load brain data.  point to contrast images on local computer (for now)
 basedir = '/Users/yoni/Dropbox/Research/LKM/projects/LKM_fmri_longitudinal/Imaging/Analyses/BIDS';
-cd(basedir)
-load CM_data_2015-07-29_16_16.mat
+cd(fullfile(basedir, 'derivatives', 'subject level'))
 
-cd(fullfile('derivatives', 'subject level'))
-
+% con_0011 is the change in [relisten > arrows] contrast, pre-to-post
 delta_relisten_fnames = filenames(fullfile('*', 'con_0011.img'));
 delta_relisten = fmri_data(delta_relisten_fnames);
 
+% gray matter mask
 gm_mask = fmri_data(which('dartel_spm12_mni152_gray_matter_mask.img'));
+
 
 %% make wh_keeps as they should be for these analyses
 
