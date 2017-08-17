@@ -3,6 +3,10 @@
 % right now, only have derivatives (the pre and post contrast images) in this format
 % later, put the full data in BIDS format for sharing on openfMRI
  
+repo_dir = '/Users/yoni/Repositories/effects_of_CM_on_brain';
+outdir = fullfile(basedir, 'derivatives', 'group level');
+cd(repo_dir);
+
 % load group assignments and behavioral data from trial
 load CM_data_2015-07-29_16_16.mat  % canlab dataset object.  loads 'CM' var
 
@@ -46,20 +50,22 @@ dat = delta_relisten;
 
 dm = zeros(57,2);
 dm(wh_med, 1) = 1;
-dm(wh_oxy, 2) = 1;
+dm(wh_faml, 2) = -1;
+dm(wh_oxy, 2) = 0;
 
 dat.X = dm;
 
 dat = apply_mask(dat, gm_mask);
 
-out = regress(dat, .001, 'unc')%, 'robust'); % automatically adds intercept as last column --> Faml
+out = regress(dat, .005, 'unc')%, 'robust'); % automatically adds intercept as last column --> Faml
 
 %% save output files
-outdir = fullfile(basedir, 'derivatives', 'group level');
 
 save(fullfile(outdir, 'resultsEachGroup_robust.mat'), 'out')
 
 write(get_wh_image(out.t,1), 'fname', 'deltarelistenCM_robust.nii', 'mni', 'thresh')
+
+% save output as masks for use as seed in connectivity analyses
 
 %% robust regression for the 3 group x time interactions of interest
 
@@ -92,7 +98,6 @@ dat.X = dm;
 out = regress(dat, 'robust'); % automatically adds intercept as last column
 save(fullfile(outdir, 'resultsOxy_v_Faml_robust.mat'), 'out', 'dat') % save output file
 
-
 %% view CM vs. Faml effect at multiple thresholds
 
 load(fullfile(outdir, 'resultsCM_v_Faml_robust.mat'))
@@ -112,6 +117,18 @@ a.sig = sig{1}(:,2);
 write(a, 'mni', 'thresh', 'fname', fullfile(outdir, 'CMvFaml_005unc.nii'));
 a.sig = sig{1}(:,3);
 write(a, 'mni', 'thresh', 'fname', fullfile(outdir, 'CMvFaml_01unc.nii'));
+
+
+%% save the sgACC seed for submission to connectivity analyses
+load(fullfile(outdir, 'resultsCM_v_Faml_robust.mat'));
+regions = region(out.t(1));
+orthviews(regions(4)) % 4th region happens to be sgACC
+
+sgACC = region2fmri_data(regions(4), out.t(1));
+write(sgACC, 'fname', fullfile(outdir, 'sgACCmask_CMvsFamlrobust_001unc.nii'));
+
+%% print cluster table of CM vs. Faml results
+cluster_table(out.t(1)) % fails w/ error
 
 
 
@@ -178,13 +195,17 @@ a.sig = sig{1}(:,3);
 write(a, 'mni', 'thresh', 'fname', 'CMvFaml_01unc_masked_CM_abs_increase.nii');
 
 
+
+
+
+
+
 %% OLD show an outline
 outlinevars = {'outline', 'linewidth', 3, 'trans', 'transvalue', 0, 'color', [1 1 1]};
 o2 = addblobs(o2, region(threshold(get_wh_image(out.t, 1), .005, 'unc')), outlinevars{:});
 
 
 %% within-group changes in FAS/deltadon
-dat = dats.listen_delta;
 
 dm = get_var(CM, 'deltaFAS', CM.wh_keep.t2);
 
@@ -200,136 +221,3 @@ out=regress(dat, .005, 'unc');
 
 %multi_threshold(get_wh_image(out.t,1), 'thresh', [.005 .01 .05]) 
 
-
-
-%% differences at time2, controlling for time1
-datT2 = dats.relistenT2;
-datT2 = apply_mask(datT2, which('gray_matter_mask.img'));
-
-datT1 = apply_mask(dats.relistenT1, which('gray_matter_mask.img'));
-
-% intercept for each group
-dm = zeros(57,3);
-dm(wh_med, 1) = 1;
-dm(wh_oxy, 2) = 1;
-dm(:, 3) = 1; %faml
-
-% CM vs. Oxy
-dm = zeros(57,2);
-dm(wh_med, 1) = 1;
-dm(wh_oxy, 1) = -1;
-dm(:, 2) = 1; %faml
-
-% Oxy vs. Faml
-dm = zeros(57,2);
-dm(wh_oxy, 1) = 1;
-dm(wh_faml, 1) = -1;
-dm(:, 2) = 1; %CM
-
-
-n = 57;
-
-%%
-for i = 1:size(datT2.dat,1)
-        
-    % Create X    
-    X = [dm datT1.dat(i, :)'];
-    Y = datT2.dat(i,:)';
-    
-  %  [n, k] = size(X);
-    [bb,stats] = robustfit(X, Y, 'bisquare', [], 'off');
-
-    b(:,i)=bb; %Betas
-    t(:,i)=stats.t; %t-values
-    p(:,i)=stats.p; %p-values
-    dfe(:,i)=stats.dfe; %degrees of freedom
-    stderr(:,i)=stats.se; %Standard Error
-    sigma(:,i)=stats.robust_s; %robust estimate of sigma. LC not sure this is the best choice can switch to 'OLS_s','MAD_s', or 's'
-    %r(:,i) = dat.Y - X * b(:,i); %residual
-end
-
-% save results
-out = struct;
-inputargs = {.01, 'unc'};
-dat = datT1;
-
-% Betas
-out.b = statistic_image;
-out.b.type = 'Beta';
-out.b.p = p';
-out.b.ste = stderr';
-out.b.N = n;
-out.b.dat = b';
-out.b.dat_descrip = sprintf('Beta Values from regression, intercept is last');
-out.b.volInfo = dat.volInfo;
-out.b.removed_voxels = dat.removed_voxels;
-out.b.removed_images = false;  % this image does not have the same dims as the original dataset
-out.b = threshold(out.b, inputargs{:}); % Threshold image
-
-% T stats
-out.t = statistic_image;
-out.t.type = 'T';
-out.t.p = p';
-out.t.ste = stderr';
-out.t.N = n;
-out.t.dat = t';
-out.t.dat_descrip = sprintf('t-values from regression, intercept is last');
-out.t.volInfo = dat.volInfo;
-out.t.removed_voxels = dat.removed_voxels;
-out.t.removed_images = false;  % this image does not have the same dims as the original dataset
-out.t = threshold(out.t, inputargs{:}, 'noverbose'); %Threshold image
-
-% DF as fmri_data
-out.df = dat;
-out.df.dat = dfe';
-out.df.dat_descrip = sprintf('Degrees of Freedom');
-
-% Sigma as fmri_data
-out.sigma = dat;
-out.sigma.dat = sigma';
-out.sigma.dat_descrip = sprintf('Sigma from Regression');
-
-
-save(fullfile(basedir, 'results.mat'), 'out')
-
-%% view montages with multi threshold
-
-multi_threshold(get_wh_image(out.t,1), 'thresh', [.005 .01 .05]) 
-
-
-%% view on full montage
-
-ofull = canlab_results_fmridisplay('montagetype', 'full');
-%%
-
-dat = get_wh_image(out.t, 2);
-
-dat = threshold(dat, .005, 'unc');
-red = [237,95,52]/256; 
-ofull = addblobs(ofull, region(dat) , 'splitcolor', {[0 0 1] [.3 0 .8] red-.2 red+.2}, 'wh_montages', 1);
-
-dat = threshold(dat, .001, 'unc');
-ofull = addblobs(ofull, region(dat) , 'splitcolor', {[0 0 1] [.3 0 .8] [.8 .3 0] [1 1 0]}, 'wh_montages', 1);
-
-%%
-ofull = removeblobs(ofull)
-
-
-%% RM-ANOVA.  this is like the pdf phil sent, but don't see other refs for it.
-
-% concatenate all the data
-% add a regressor for group
-% a regressor for time (1 or 2)
-% an intercept per subject
-% a group by time interaction
-% 
-
-%% non-parametric (in vmPFC)
-%R = robust_reg_nonparam(dm, 5, 'mask', which('VMPFC_right.img'), 'names', {'cm_vs_faml', 'intcp'}, 'data', dat)
-
-
-%% try my own SVC version.  FDR in vmPFC
-dat = apply_mask(dat, vmpfc);
-%orthviews(get_wh_image(dat,1))
-dat.X = dm;
-out=regress(dat, .05, 'fdr');
