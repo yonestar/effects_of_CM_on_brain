@@ -1,0 +1,39 @@
+{
+"Primary_publication": 
+null,
+
+"Associated_publications": 
+"Ashar, Y. K., Andrews-Hanna, J. R., Dimidjian, S., Wager, T. D. (2017).  Empathic care and distress: Predictive brain markers and dissociable brain systems. Neuron.
+Ashar, Y. K., Andrews-Hanna, J. R., Yarkoni, T., Sills, J., Halifax, J., Dimidjian, S., Wager, T. D. (2016) Effects of compassion meditation on a psychological model of charitable donation. Emotion.",
+
+"Notes":
+"This dataset is from a randomized trial of compassion meditation.",
+
+"Publication_URLs": 
+null,
+
+"Publication_DOIs": null,
+
+"Paradigm_files_links": null,
+
+"Data_files_links": null,
+
+"IRB_number": null,
+
+"Scanner_site": "University of Colorado",
+
+"Field_strength": "3.0T",
+
+"Citing_this_work": 
+"If you use this dataset in a publication, 
+please include as authors or acknowledge individuals as specified below. 
+Please also see information on publications and grants to cite.",
+
+"Authors_to_include_on_reuse": null,
+
+"Authors_to_acknowledge_on_reuse": "Yoni Ashar, Tor Wager",
+
+"Grant_numbers_to_cite": null
+
+
+}
