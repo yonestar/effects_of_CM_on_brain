@@ -11,14 +11,14 @@ colors = {[1 .2 .2] [.2 .2 1] [.4 .4 .4] [.7 .7 .7]};
 wh = get_var(CM, 'deltadon') > -45 | get_var(CM, 'deltadon') < -46 ; % drop the P who misunderstood donation instructions
 
 %% bar graph of 3 groups
-plot_var(CM, 'deltadon', 'subjtype', 'Group', 'color', colors, '95CI', 'wh_keep', wh)%, 'noviolin', 'noind') %deltadon and deltaFAS
+plot_var(CM, 'deltadon', 'subjtype', 'Group', 'color', colors, '95CI', 'wh_keep', wh, 'noviolin', 'noind') %deltadon and deltaFAS
 set(gcf, 'Position',[ 840  92   228   247])
 %set(gca, 'FontName', 'Helvetica Neue')
 
 % print image to file
 saveas(gcf, fullfile(figdir, 'deltadon_bar.svg'));
 
-plot_var(CM, 'deltaFAS', 'subjtype', 'Group', 'color', colors, '95CI', 'wh', wh)%, 'noviolin', 'noind') %deltadon and deltaFAS
+plot_var(CM, 'deltaFAS', 'subjtype', 'Group', 'color', colors, '95CI', 'wh', wh, 'noviolin', 'noind') %deltadon and deltaFAS
 set(gcf, 'Position',[ 840  92   228   247])
 
 % print image to file

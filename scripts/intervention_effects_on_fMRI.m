@@ -25,6 +25,8 @@ for f = fieldnames(CM.wh_keep)'
     CM.wh_keep.(f{1})(1:13) = []; 
 end
 
+grp = get_var(CM, 'Group');
+
 
 save(fullfile(repodir, 'data', 'CM_data_included_Ss_only.mat'), 'CM')
 
@@ -36,7 +38,6 @@ fprintf('Group %i: N = %d\n', [[1:3]' Ns]')
 
 
 %% robust regression WITHIN each group, using only Ss for that group. Basically a robust one-sample T-test
-grp = get_var(CM, 'Group');
 mygroup = 3; %edit to be 1, 2, or 3
 within_group = get_wh_image(delta_relisten, grp==mygroup);
 within_group.X = ones(Ns(mygroup),1); % estimate intercept (ttest)
@@ -54,9 +55,50 @@ dm( grp==3, 2) = 1;
 figure; imagesc([dm ones(length(dm), 1)]); colorbar
 dat.X = dm; % regs are, in order: Oxy vs CM, Faml vs CM, abs change in CM
 
-%% estimate model
+% estimate model
 out2 = regress(dat, .001, 'unc', 'robust'); % automatically adds intercept as last column --> CM
 save(fullfile(outdir, 'cm_vs_oxy_faml_robust.mat'), 'out2')
+
+
+%% robust regression: CM vs. Faml and CM vs. OxyPla comparisons, with DeltaDon and DeltaFAS mean centered within group
+% deltadon and deltaFAS only share 3.5% of variance after mean-centering
+% within group, so OK include in same model. Also with robust corr, not a
+% strong relationship between the two vars (
+
+dat = time2;%delta_relisten;
+
+% get deltadon/deltaFAS and mean center within group
+deltadon_mcgrp = get_var(CM,'deltadon');
+don1_mcgrp = get_var(CM,'don1');
+don2_mcgrp = get_var(CM,'don2');
+deltaFAS_mcgrp = get_var(CM,'deltaFAS');
+
+for i=1:3
+    deltadon_mcgrp(grp==i) = scale(deltadon_mcgrp(grp==i), 1);
+    don1_mcgrp(grp==i) = scale(don1_mcgrp(grp==i), 1);
+    don2_mcgrp(grp==i) = scale(don2_mcgrp(grp==i), 1);
+    deltaFAS_mcgrp(grp==i) = scale(deltaFAS_mcgrp(grp==i), 1);
+end
+
+mdl = fitglm(don1_mcgrp, don2_mcgrp);
+don2_mcgrp_orth = mdl.Residuals.Raw;
+
+%% build design matrix. Make CM the reference group (intercept), and add dummy regressors for Faml and OxyPla
+dm = zeros(size(delta_relisten.dat, 2), 2);
+dm( grp==2, 1) = -1;
+dm( grp==3, 2) = -1;
+
+%dm(:,3) = deltadon_mcgrp;
+dm(:,3) = don1_mcgrp;
+dm(:,4) = don2_mcgrp_orth;
+
+%figure; imagesc([dm ones(length(dm), 1)]); colorbar
+dat.X = dm; % regs are, in order: Oxy vs CM, Faml vs CM, abs change in CM
+
+% estimate model
+out2 = regress(dat, .005, 'unc'); % automatically adds intercept as last column --> CM
+%save(fullfile(outdir, 'cm_vs_oxy_faml_deltadonfas_robust.mat'), 'out2')
+
 
 
 %% estimate placebo effects (OxyPla vs. Faml)
