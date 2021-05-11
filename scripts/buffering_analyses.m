@@ -23,15 +23,15 @@ grp = get_var(CM, 'Group');
 
 
 %% do repeated CV to get a point estimate for the true effect
-for i=1:100
+for i=1:10
     i
-    [test_cm(i,:), test_oxy(i,:), test_faml(i,:), decreases{i}] = cv_buffering_test(delta_relisten, grp, 5);
+    [test_cm(i,:), test_oxy(i,:), test_faml(i,:), ~] = cv_buffering_test(delta_relisten, grp, 5);
     g = mes(test_cm(i,:), test_faml(i,:), 'hedgesg'); 
     g_cm_vs_faml(i) = g.hedgesg;
 end
 
 %% get a null distribution: permutation test with shuffled group labels
-for i=1:10000
+for i=1:10
     i
     grp_shuffle = grp(randperm(length(grp)));
     [test_cm(i,:), test_oxy(i,:), test_faml(i,:), decreases{i}] = cv_buffering_test(delta_relisten, grp_shuffle, 5);

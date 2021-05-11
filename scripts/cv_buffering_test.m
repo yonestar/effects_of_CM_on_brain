@@ -22,21 +22,22 @@ function [test_cm, test_oxy, test_faml, decreases] = cv_buffering_test(delta_rel
     delta_faml = get_wh_image(delta_relisten, grp==3);
 
     % create train and test sets
-    cvinds_faml = crossvalind('Kfold',18,kfold);
-    cvinds_cm = crossvalind('Kfold',21,kfold);
-    cvinds_oxy = crossvalind('Kfold',18,kfold);
-
+    cvinds_faml = cvpartition(18, 'KFold', kfold);
+    cvinds_cm = cvpartition(21, 'KFold', kfold);
+    cvinds_oxy = cvpartition(18, 'KFold', kfold);
+    
     decreases = [];
     
     for j = 1:kfold
 
         % find 5% most decreased voxels in Faml train set
-        delta_faml_train = get_wh_image(delta_faml, cvinds_faml~=j);
+        delta_faml_train = get_wh_image(delta_faml, training(cvinds_faml,j));
         t = ttest(delta_faml_train);
         decreases5prc = threshold(t, [prctile(t.dat, 5) Inf], 'raw-outside');
         decreases5prc.dat = decreases5prc.sig; % make into a "mask"
         %decreases5prc = threshold(t, .01, 'unc');    %figure; montage(decreases5prc)
 
+        % save the area with decreases from the first fold
         if isempty(decreases)
             decreases = decreases5prc;
         else
@@ -45,18 +46,18 @@ function [test_cm, test_oxy, test_faml, decreases] = cv_buffering_test(delta_rel
         
         %% extract ROI vals from held out Ss
         
-        delta_faml_test = get_wh_image(delta_faml, cvinds_faml==j);
-        delta_cm_test = get_wh_image(delta_cm, cvinds_cm==j);
-        delta_oxy_test = get_wh_image(delta_oxy, cvinds_oxy==j);
+        delta_faml_test = get_wh_image(delta_faml, test(cvinds_faml,j));
+        delta_cm_test = get_wh_image(delta_cm, test(cvinds_cm,j));
+        delta_oxy_test = get_wh_image(delta_oxy, test(cvinds_oxy,j));
         
         tmp = extract_roi_averages(delta_faml_test, decreases5prc);
-        test_faml(cvinds_faml==j) = tmp.dat;
+        test_faml(test(cvinds_faml,j)) = tmp.dat;
 
         tmp = extract_roi_averages(delta_cm_test, decreases5prc);
-        test_cm(cvinds_cm==j) = tmp.dat;
+        test_cm(test(cvinds_cm,j)) = tmp.dat;
 
         tmp = extract_roi_averages(delta_oxy_test, decreases5prc);
-        test_oxy(cvinds_oxy==j) = tmp.dat;
+        test_oxy(test(cvinds_oxy,j)) = tmp.dat;
         
 
     end % end cross val

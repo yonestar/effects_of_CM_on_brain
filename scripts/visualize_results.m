@@ -80,7 +80,7 @@ end
 
 % set up montage
 o1 = fmridisplay('overlay',underlay);
-o1 = montage(o1, 'axial', 'slice_range', [-16 -8], 'onerow', 'spacing', 8, 'noverbose');
+o1 = montage(o1, 'axial', 'slice_range', [-22 -16], 'onerow', 'spacing', 6, 'noverbose');
 
 brighten(.2)
 enlarge_axes(gcf, .8);
@@ -93,12 +93,17 @@ saveas(gcf, fullfile(figdir, ['cm_vs_oxy_axial.png'])); % print image to file
 %% add blobs: CM vs Faml
 o1 = removeblobs(o1);
 o1 = multi_threshold(cm_vs_faml, 'o2', o1, 'thresh', [.001 .005], 'sizethresh', [10 1]); %, 'poscolors', poscolor);
-saveas(gcf, fullfile(figdir, ['cm_vs_faml_axial.png'])); % print image to file
+
+% also add in blob from randomize results
+clusters_img = fmri_data(fullfile(repodir, 'data/for_randomise/masks/ofc_nac_vta/CMvFAML', 'clusters_img.nii'));
+o1 = addblobs(o1, clusters_img);
+
+%saveas(gcf, fullfile(figdir, ['cm_vs_faml_axial.png'])); % print image to file
 
 %% Fig 1a: Sagittal slices: group comparisons
 % set up montage
 o2 = fmridisplay('overlay',underlay);
-o2 = montage(o2, 'sagittal', 'slice_range', [0 6], 'onerow', 'spacing', 6, 'noverbose');
+o2 = montage(o2, 'sagittal', 'slice_range', [-18 6], 'onerow', 'spacing', 6, 'noverbose');
 brighten(.2)
 enlarge_axes(gcf, .8);
 
@@ -110,7 +115,12 @@ saveas(gcf, fullfile(figdir, ['cm_vs_oxy_sag.png'])); % save image to file
 %% add blobs: CM vs Faml
 o2 = removeblobs(o2);
 o2 = multi_threshold(cm_vs_faml, 'o2', o2, 'thresh', [.001 .005], 'sizethresh', [10 1]); %, 'poscolors', poscolor);
-saveas(gcf, fullfile(figdir, ['cm_vs_faml_sag.png'])); % save image to file
+
+% also add in blob from randomize results
+clusters_img = fmri_data(fullfile(repodir, 'data/for_randomise/masks/ofc_nac_vta/CMvFAML', 'clusters_img.nii'));
+o2 = addblobs(o2, clusters_img);
+
+%saveas(gcf, fullfile(figdir, ['cm_vs_faml_sag.png'])); % save image to file
 
 
 
